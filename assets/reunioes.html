@@ -380,7 +380,7 @@ function runHtml(m){
   var act=d.curAct,isX=typeof act==='string',ci=isX?d.lastPlanned:act;
   var o=a.byAct[act]||{ms:0},ca=isX?null:m.acts[act];
   var h='';
-  h+='<header class="top"><div class="toprow"><button class="link" data-act="home">‹ Início</button><span class="pill '+(d.paused?'warn':'acc')+'" id="pill">'+(d.paused?'Pausada':'Em andamento')+'</span></div></header>';
+  h+='<header class="top"><div class="toprow"><span class="pill '+(d.paused?'warn':'acc')+'" id="pill">'+(d.paused?'Pausada':'Em andamento')+'</span></div></header>';
   h+='<div class="runhead"><div><div class="eyebrow">Tempo cronometrado</div><div class="total" id="tTotal">'+fmtH(a.total)+'</div><div class="meta" id="tLeft">'+leftTxt(a.total)+'</div></div><div class="meta" style="text-align:right">'+esc(m.name)+'</div></div>';
   h+='<div class="parts">';
   PART_ORDER.forEach(function(p){h+='<div class="pc"><span class="pl">'+PART_SHORT[p]+'</span><span class="pv" id="pc-'+p+'">'+fmtMS(a.byPart[p]||0)+'</span></div>';});
@@ -410,29 +410,25 @@ function runHtml(m){
   });
   Object.keys(a.byAct).forEach(function(k){if(k.indexOf('x:')===0)h+='<li class="row is-done"><span class="nm">'+esc(k.slice(2))+'</span><span class="tm">—</span><span class="rl">'+fmtMS(a.byAct[k].ms)+'</span></li>';});
   h+='</ol>';
-  /* dock */
-  var nextLabel,nextAct;
+  /* Controles da reunião: somente Avançar, Imprevisto e Encerrar. */
   h+='<div class="dock"><div class="dock-in">';
-  if(d.paused){h+='<button class="btn primary big" data-act="resume"><span class="b-k">Pausada</span><span class="b-v">Retomar</span></button>';}
-  else if(isX){h+='<button class="btn primary big" data-act="back"><span class="b-k">Voltar para</span><span class="b-v">'+esc(m.acts[d.lastPlanned].name)+'</span></button>';}
-  else if(act>=n-1){h+='<button class="btn primary big" data-act="askEnd"><span class="b-k">Última fração</span><span class="b-v">Encerrar reunião</span></button>';}
-  else{h+='<button class="btn primary big" data-act="next"><span class="b-k">Próxima</span><span class="b-v">'+esc(m.acts[act+1].name)+'</span></button>';}
+  if(isX){
+    h+='<button class="btn primary big" data-act="next"><span class="b-v">Avançar · Retomar fração</span></button>';
+  }else{
+    h+='<button class="btn primary big" data-act="next"><span class="b-v">Avançar</span></button>';
+  }
   h+='<div class="dock-row">';
-  if(!d.paused&&!isX)h+='<button class="btn" data-act="pause">Pausar</button>';
-  if(!d.paused&&!isX)h+='<button class="btn" data-act="extraMenu">Imprevisto</button>';
-  if(!d.paused&&!isX&&act<n-1&&m.acts[act+1].optional)h+='<button class="btn" data-act="skip" aria-label="Pular '+esc(m.acts[act+1].name)+'">Pular</button>';
-  if(!d.paused)h+='<button class="btn" data-act="adjMenu">Ajustar toque</button>';
-  if(!d.paused&&act<n-1)h+='<button class="btn ghost" data-act="askEnd">Encerrar</button>';
-  if(d.paused)h+='<button class="btn ghost" data-act="askEnd">Encerrar reunião</button>';
+  h+='<button class="btn" data-act="extra"'+(isX?' disabled':'')+'>Imprevisto</button>';
+  h+='<button class="btn ghost" data-act="askEnd">Encerrar</button>';
   h+='</div></div></div>';
   return h;
 }
 
 function reviewHtml(m){
-  var now=Date.now(),d=derive(m,now),a=agg(m,d),b=meetingBounds(m,d),ro=m.status==='saved';
+  var now=Date.now(),d=derive(m,now),a=agg(m,d),b=meetingBounds(m,d),ro=false;
   var pl=planned(m,a,null),h='';
   h+='<header class="top"><div class="toprow"><button class="link" data-act="home">‹ Início</button>'+statusPill(m)+'</div><h1>'+esc(m.name)+'</h1><p class="sub">'+dateStr(b.start)+' · '+clockStr(b.start)+(b.end?' às '+clockStr(b.end):'')+'</p></header>';
-  if(!ro)h+='<div class="notice">Confira os tempos. Nada é concluído até você tocar em Salvar resumo.</div>';
+  h+='<div class="notice">Reunião encerrada e salva automaticamente. Correções disponíveis abaixo.</div>';
   h+='<div class="kpis"><div class="kpi"><span class="eyebrow">Real</span><span class="v">'+fmtH(a.total)+'</span></div><div class="kpi"><span class="eyebrow">Previsto</span><span class="v">'+fmtH(pl)+'</span></div><div class="kpi"><span class="eyebrow">Desvio</span><span class="v '+(a.total>pl?'dv-bad':'dv-ok')+'">'+fmtDev(a.total-pl)+'</span></div></div>';
   h+='<section class="stack"><h2>Por parte</h2><div class="tbl"><div class="tr th"><span>Parte</span><span>Prev.</span><span>Real</span><span>Desvio</span></div>';
   PART_ORDER.forEach(function(p){
@@ -464,8 +460,8 @@ function reviewHtml(m){
   if(cl.length){h+='<section class="stack"><h2>Histórico de correções</h2><ul class="hist">';cl.forEach(function(c){h+='<li><span class="when">'+clockStr(c.at)+'</span><br>'+esc(c.text)+'</li>';});h+='</ul><p class="meta">Os registros originais ficam guardados. Cada correção só muda a classificação do intervalo.</p></section>';}
   h+='<button class="btn danger" data-act="askDel">Apagar esta reunião</button>';
   h+='<div class="dock"><div class="dock-in">';
-  if(!ro)h+='<button class="btn primary big" data-act="saveSummary"><span class="b-v">Salvar resumo</span></button>';
-  h+='<div class="dock-row"><button class="btn" data-act="copy">Copiar resumo</button>'+(dl?'<button class="btn" data-act="csv">Baixar CSV</button>':'')+(ro?'<button class="btn" data-act="home">Início</button>':'')+'</div></div></div>';
+
+  h+='<div class="dock-row"><button class="btn" data-act="copy">Copiar resumo</button>'+(dl?'<button class="btn" data-act="csv">Baixar CSV</button>':'')+'<button class="btn" data-act="home">Início</button>'+'</div></div></div>';
   return h;
 }
 
@@ -499,6 +495,12 @@ function tick(){
 }
 
 function push(m,e){m.events.push(e);save();render();}
+function finishMeeting(m,t){
+  if(!m||m.status!=='running')return;
+  m.events.push({k:'end',t:t});
+  m.status='saved';m.endedAt=t;
+  save();if(window.NativeApp)NativeApp.postMessage(JSON.stringify({action:'sleep'}));view={name:'review',id:m.id};render();window.scrollTo(0,0);
+}
 function lastTouch(m,d){
   for(var i=m.events.length-1;i>0;i--){var k=m.events[i].k;if(k==='sw'||k==='extra'||k==='back')return i;}
   return -1;
@@ -519,8 +521,10 @@ function onAct(name,arg){
     case 'open':{
       var t=byId(arg);if(!t)break;view={name:t.status==='running'?'run':'review',id:t.id};render();if(t.status==='running')wake();window.scrollTo(0,0);break;}
     case 'next':{
-      if(!m)break;d=derive(m,now);if(d.paused||typeof d.curAct!=='number')break;
-      if(d.curAct>=m.acts.length-1){onAct('askEnd');break;}
+      if(!m||m.status!=='running')break;d=derive(m,now);
+      if(typeof d.curAct==='string'){push(m,{k:'back',t:now});break;}
+      if(d.paused||typeof d.curAct!=='number')break;
+      if(d.curAct>=m.acts.length-1){finishMeeting(m,now);break;}
       push(m,{k:'sw',t:now,to:d.curAct+1});break;}
     case 'skip':{
       if(!m)break;d=derive(m,now);if(d.paused||typeof d.curAct!=='number')break;
@@ -528,9 +532,12 @@ function onAct(name,arg){
     case 'pause':if(m)push(m,{k:'pause',t:now});break;
     case 'resume':if(m){push(m,{k:'resume',t:now});wake();}break;
     case 'back':if(m)push(m,{k:'back',t:now});break;
-    case 'extraMenu':
-      openSheet('<h3>Imprevisto</h3><p>O tempo passa a contar à parte, fora das três partes, até você voltar para a fração em andamento.</p><div class="stack">'+EXTRA_LABELS.map(function(l,i){return '<button class="btn" data-act="extra" data-arg="'+i+'">'+esc(l)+'</button>';}).join('')+'<button class="btn ghost" data-act="closeSheet">Cancelar</button></div>');break;
-    case 'extra':if(m){closeSheet();push(m,{k:'extra',t:now,label:EXTRA_LABELS[+arg]});}break;
+    case 'extra':{
+      if(!m||m.status!=='running')break;
+      d=derive(m,now);
+      if(d.paused||typeof d.curAct!=='number')break;
+      push(m,{k:'extra',t:now,label:'Imprevisto'});
+      break;}
     case 'adjMenu':{
       if(!m)break;d=derive(m,now);var li=lastTouch(m,d);
       if(li<0){openSheet('<h3>Ajustar último toque</h3><p>Ainda não há troca de fração para ajustar.</p><button class="btn primary" data-act="closeSheet">Fechar</button>');break;}
@@ -542,11 +549,12 @@ function onAct(name,arg){
       var lab=d.curAct!==null&&d.curAct!==undefined?actName(m,d.curAct):'';
       m.shifts.push({at:now,ev:idx,by:by,label:'troca para '+lab});save();closeSheet();render();toast('Troca recuada em '+arg+' s');break;}
     case 'askEnd':
-      openSheet('<h3>Encerrar a reunião?</h3><p>O cronômetro para e o resumo fica pendente para revisão. Você ainda pode corrigir intervalos antes de salvar.</p><div class="two"><button class="btn" data-act="closeSheet">Continuar</button><button class="btn primary" data-act="end">Encerrar</button></div>');break;
+      if(!m||m.status!=='running')break;
+      openSheet('<h3>Encerrar a reunião?</h3><p>A reunião será encerrada e salva automaticamente. Correções ficam disponíveis depois.</p><div class="two"><button class="btn" data-act="closeSheet">Continuar</button><button class="btn primary" data-act="end">Encerrar</button></div>');break;
     case 'end':{
-      if(!m)break;closeSheet();m.events.push({k:'end',t:now});m.status='review';m.endedAt=now;save();view={name:'review',id:m.id};render();window.scrollTo(0,0);break;}
+      if(!m||m.status!=='running')break;closeSheet();finishMeeting(m,Date.now());break;}
     case 'rcMenu':{
-      if(!m)break;d=derive(m,now);var sg=d.segs[+arg];if(!sg)break;
+      if(!m||m.status==='running')break;d=derive(m,now);var sg=d.segs[+arg];if(!sg)break;
       var opts='';PART_ORDER.forEach(function(p){
         if(p==='extra'){opts+='<optgroup label="Imprevistos">'+EXTRA_LABELS.map(function(l){var v='x:'+l;return '<option value="'+esc(v)+'"'+(sg.act===v?' selected':'')+'>'+esc(l)+'</option>';}).join('')+'</optgroup>';return;}
         opts+='<optgroup label="'+esc(PARTS[p])+'">';
@@ -555,12 +563,12 @@ function onAct(name,arg){
       });
       openSheet('<h3>Alterar classificação</h3><p>Intervalo das '+clockStr(sg.start)+', duração '+fmtMS(sg.end-sg.start)+'. Hoje está em <b>'+esc(actName(m,sg.act))+'</b>.</p><label for="rcSel" class="eyebrow">Mover para</label><select id="rcSel">'+opts+'</select><div class="two"><button class="btn" data-act="closeSheet">Cancelar</button><button class="btn primary" data-act="rcAsk" data-arg="'+sg.i+'">Continuar</button></div>');break;}
     case 'rcAsk':{
-      if(!m)break;d=derive(m,now);var sg2=d.segs[+arg];if(!sg2)break;
+      if(!m||m.status==='running')break;d=derive(m,now);var sg2=d.segs[+arg];if(!sg2)break;
       var sel=document.getElementById('rcSel');var raw=sel?sel.value:'';var to=/^\d+$/.test(raw)?+raw:raw;
       if(to===sg2.act){closeSheet();break;}
       openSheet('<h3>Confirmar correção</h3><p>Mover os <b>'+fmtMS(sg2.end-sg2.start)+'</b> deste intervalo de <b>'+esc(actName(m,sg2.act))+'</b> para <b>'+esc(actName(m,to))+'</b>?</p><p class="meta">O registro original continua guardado. Os totais das frações, das partes e da reunião são recalculados sem contar o mesmo tempo duas vezes.</p><div class="two"><button class="btn" data-act="closeSheet">Cancelar</button><button class="btn primary" data-act="rcDo" data-arg="'+sg2.i+'|'+esc(String(to))+'">Confirmar</button></div>');break;}
     case 'rcDo':{
-      if(!m)break;var pr=String(arg).split('|');var si=+pr[0];var tv=pr.slice(1).join('|');var toV=/^\d+$/.test(tv)?+tv:tv;
+      if(!m||m.status==='running')break;var pr=String(arg).split('|');var si=+pr[0];var tv=pr.slice(1).join('|');var toV=/^\d+$/.test(tv)?+tv:tv;
       d=derive(m,now);var sg3=d.segs[si];if(!sg3)break;
       m.fixes.push({at:now,seg:si,from:sg3.act,to:toV});save();closeSheet();render();toast('Correção registrada');break;}
     case 'saveSummary':if(m){m.status='saved';save();render();window.scrollTo(0,0);toast('Resumo salvo');}break;
@@ -606,3 +614,4 @@ else if(!window.claude){dl={save:function(r){return new Promise(function(res){va
 
 </body>
 </html>
+
