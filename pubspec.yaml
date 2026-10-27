@@ -1,0 +1,17 @@
+name: controle_reunioes
+version: 1.0.0+1
+description: Controle de Reuniões Android
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: ^4.10.0
+  path_provider: ^2.1.5
+  share_plus: ^10.1.4
+  wakelock_plus: ^1.2.10
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/reunioes.html
