@@ -1,20 +1,29 @@
-# Controle de Reuniões — Flutter para Android
+# Controle de Reuniões — Projeto Flutter Android
 
-Aplicativo Flutter que reproduz a interface e as regras **do HTML fornecido** em uma WebView Android. O HTML/CSS/JavaScript original está incluído em `assets/reunioes.html` e roda localmente, sem servidor. Não é uma reimplementação de widgets nativos Flutter: a camada Flutter hospeda a interface e integra cópia, exportação e tela ligada.
+Aplicativo Android que apresenta a interface HTML local em uma WebView Flutter. A interface, as regras de negócio e o armazenamento local são implementados em `assets/reunioes.html`; `lib/main.dart` hospeda a WebView e integra recursos nativos.
 
-## Compilar usando somente o GitHub
+## Estrutura do projeto
 
-1. Crie um repositório **vazio** no GitHub (sem README ou .gitignore inicial).
-2. Extraia este ZIP e envie **o conteúdo da pasta** para a raiz do repositório, incluindo `.github/workflows/android-apk.yml` (a pasta `.github` é oculta em alguns gerenciadores).
-3. Abra a aba **Actions** no GitHub e selecione **Compilar APK Android**. Caso não inicie automaticamente, clique em **Run workflow**.
-4. Aguarde a conclusão e abra a execução. Em **Artifacts**, baixe `controle-reunioes-apk`.
-5. Extraia o arquivo baixado e instale `app-release.apk` no Android. O APK gerado pelo workflow usa a assinatura de debug/release padrão do Flutter; para publicação na Play Store, configure assinatura própria.
+- `lib/main.dart`: inicialização Flutter, criação da WebView, tratamento de mensagens do JavaScript e estados de carregamento/erro.
+- `assets/reunioes.html`: interface HTML/CSS/JavaScript e funcionalidades do aplicativo.
+- `pubspec.yaml`: dependências Flutter e declaração do HTML como recurso empacotado.
+- `.github/workflows/android-apk.yml`: automação de compilação do APK no GitHub Actions.
 
-O workflow executa `flutter create` para gerar os arquivos padrão Android, depois `flutter build apk --release`. Não é necessário subir arquivos Android gerados para o repositório.
+As funções JavaScript e métodos Dart têm comentários de documentação próximos às declarações para explicar seus papéis. Ao alterar a interface, mantenha o HTML da raiz sincronizado com `assets/reunioes.html` caso ambos sejam mantidos separadamente.
+
+## Compilar pelo GitHub
+
+1. Crie um repositório vazio no GitHub.
+2. Extraia este ZIP e envie o conteúdo da pasta do projeto para a raiz do repositório, incluindo `.github/workflows/android-apk.yml`.
+3. Abra **Actions** e selecione **Compilar APK Android**. Se necessário, use **Run workflow**.
+4. Após a conclusão, abra a execução e baixe o artefato `controle-reunioes-apk`.
+5. Extraia o artefato e instale `app-release.apk` no dispositivo Android.
+
+O workflow cria os arquivos de plataforma Android com Flutter e executa `flutter build apk --release`.
 
 ## Compilar localmente
 
-Instale Flutter e Android SDK e execute:
+Com Flutter e Android SDK instalados, execute na raiz do projeto:
 
 ```bash
 flutter create --platforms=android --project-name controle_reunioes --org br.com.controle --no-pub .
@@ -22,14 +31,27 @@ flutter pub get
 flutter build apk --release
 ```
 
-APK em `build/app/outputs/flutter-apk/app-release.apk`.
+O APK será gerado em `build/app/outputs/flutter-apk/app-release.apk`.
 
-## Dados e limitações
+## Integração entre HTML e Flutter
 
-- Reuniões ficam no `localStorage` do WebView, no armazenamento privado do aplicativo.
-- Desinstalar o app ou limpar os dados apaga os registros. Exporte o resumo/CSV antes.
-- A contagem usa relógio real, mesmo em segundo plano; a tela ligada é solicitada quando a reunião começa.
-- A exportação CSV abre a folha de compartilhamento do Android para salvar/enviar o arquivo.
-- Fontes Google podem precisar de internet; há fontes substitutas.
-- Não há migração automática dos dados salvos no navegador onde o HTML era utilizado.
-- O projeto não foi compilado/testado em dispositivo neste ambiente, pois Flutter SDK não está instalado aqui.
+O HTML envia mensagens JSON pelo canal JavaScript `NativeApp`. O método `_onMessage` em `lib/main.dart` trata estas ações:
+
+- `wake`: mantém a tela ligada durante o cronômetro.
+- `sleep`: desativa o bloqueio de repouso da tela.
+- `copy`: copia texto para a área de transferência.
+- `csv`: cria um CSV temporário e abre a folha de compartilhamento do Android.
+
+Se uma ação nova for adicionada no HTML, inclua o tratamento correspondente na ponte nativa.
+
+## Armazenamento e dados
+
+- Os registros são mantidos no `localStorage` da WebView, dentro do armazenamento privado do aplicativo.
+- Desinstalar o aplicativo ou limpar seus dados remove os registros locais.
+- A interface utiliza o relógio real para contabilizar a reunião mesmo quando o aplicativo está em segundo plano.
+- Exporte backups antes de reinstalar ou limpar dados do aplicativo.
+- O HTML é carregado localmente; fontes externas podem depender de conexão, mas não são necessárias para carregar a tela.
+
+## Verificação
+
+O projeto precisa ser compilado pelo GitHub Actions ou em ambiente com Flutter instalado para validar a geração do APK.

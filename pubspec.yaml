@@ -11,7 +11,17 @@ dependencies:
   path_provider: ^2.1.5
   share_plus: ^10.1.4
   wakelock_plus: ^1.2.10
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.14.3
 flutter:
   uses-material-design: true
   assets:
     - assets/reunioes.html
+
+flutter_launcher_icons:
+  android: true
+  image_path: assets/app_icon.png
+  adaptive_icon_background: '#000000'
+  adaptive_icon_foreground: assets/app_icon.png
